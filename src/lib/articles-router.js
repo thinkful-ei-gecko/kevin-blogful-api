@@ -69,8 +69,7 @@ articlesRouter
         }
         res.article = article; // save the article for the next middleware
         next(); // don't forget to call next so the next middleware happens!
-      })
-      .catch(next);
+      });
   })
   .get((req, res, next) => {
     return res.json({
