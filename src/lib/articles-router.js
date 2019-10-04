@@ -29,7 +29,7 @@ articlesRouter
 
     ArticlesService.insertArticle(req.app.get('db'), newArticle)
       .then((article) => {
-        res
+        return res
           .status(201)
           .location(`/articles/${article.id}`)
           .json(article);
@@ -61,7 +61,7 @@ articlesRouter
   .delete((req, res, next) => {
     ArticlesService.deleteArticleById(req.app.get('db'), req.params.article_id)
       .then(() => {
-        res.status(204).end();
+        return res.status(204).end();
       })
       .catch(next);
   });
