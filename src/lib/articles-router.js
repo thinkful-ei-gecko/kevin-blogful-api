@@ -1,4 +1,5 @@
 const express = require('express');
+const xss = require('xss');
 const ArticlesService = require('./articles-service');
 const articlesRouter = express.Router();
 const jsonParser = express.json();
@@ -11,7 +12,17 @@ articlesRouter
   .get((req, res, next) => {
     ArticlesService.getAllArticles(req.app.get('db'))
       .then((articles) => {
-        return res.json(articles);
+        return res.json(
+          articles.map((article) => {
+            return {
+              id: article.id,
+              style: article.style,
+              title: xss(article.title), // sanitize title
+              content: xss(article.content), // sanitize content
+              date_published: article.date_published,
+            };
+          })
+        );
       })
       .catch(next);
   })
@@ -32,7 +43,13 @@ articlesRouter
         return res
           .status(201)
           .location(`/articles/${article.id}`)
-          .json(article);
+          .json({
+            id: article.id,
+            style: article.style,
+            title: xss(article.title), // sanitize title
+            content: xss(article.content), // sanitize content
+            date_published: article.date_published,
+          });
       })
       .catch(next);
   });
@@ -56,7 +73,13 @@ articlesRouter
       .catch(next);
   })
   .get((req, res, next) => {
-    return res.json(res.article);
+    return res.json({
+      id: res.article.id,
+      style: res.article.style,
+      title: xss(res.article.title), // sanitize title
+      content: xss(res.article.content), // sanitize content
+      date_published: res.article.date_published,
+    });
   })
   .delete((req, res, next) => {
     ArticlesService.deleteArticleById(req.app.get('db'), req.params.article_id)

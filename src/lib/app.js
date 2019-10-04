@@ -32,6 +32,12 @@ app.get('/', (req, res) => {
   return res.status(200).end();
 });
 
+app.get('/xss', (req, res) => {
+  return res
+    .cookie('secretToken', '1234567890')
+    .sendFile(__dirname + '/xss-example.html');
+});
+
 app.use('/articles', articlesRouter);
 
 /*******************************************************************

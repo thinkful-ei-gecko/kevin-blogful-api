@@ -1,6 +1,9 @@
 const knex = require('knex');
 const app = require('../src/lib/app');
-const { makeArticlesArray } = require('./articles.fixtures');
+const {
+  makeArticlesArray,
+  makeMaliciousArticle,
+} = require('./articles.fixtures');
 
 describe(`Articles Endpoints`, () => {
   let db;
@@ -62,6 +65,24 @@ describe(`Articles Endpoints`, () => {
           });
       });
     });
+
+    context(`Given an XSS attack article`, () => {
+      const { maliciousArticle, expectedArticle } = makeMaliciousArticle();
+
+      beforeEach('insert malicious article', () => {
+        return db.insert([maliciousArticle]).into(`${tableName}`);
+      });
+
+      it('removes XSS attack content', () => {
+        return supertest(app)
+          .get(`/articles`)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body[0].title).to.eql(expectedArticle.title);
+            expect(res.body[0].content).to.eql(expectedArticle.content);
+          });
+      });
+    });
   });
 
   /*****************************************************************
@@ -95,6 +116,24 @@ describe(`Articles Endpoints`, () => {
               ...res.body,
               date_published: new Date(res.body.date_published),
             }).to.eql(expectedArticle);
+          });
+      });
+    });
+
+    context(`Given an XSS attack article`, () => {
+      const { maliciousArticle, expectedArticle } = makeMaliciousArticle();
+
+      beforeEach('insert malicious article', () => {
+        return db.insert([maliciousArticle]).into(`${tableName}`);
+      });
+
+      it('removes XSS attack content', () => {
+        return supertest(app)
+          .get(`/articles/${maliciousArticle.id}`)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.title).to.eql(expectedArticle.title);
+            expect(res.body.content).to.eql(expectedArticle.content);
           });
       });
     });
@@ -149,6 +188,18 @@ describe(`Articles Endpoints`, () => {
             error: { message: `Missing '${field}' in request body` },
           });
       });
+    });
+
+    it('removes XSS attack content from response', () => {
+      const { maliciousArticle, expectedArticle } = makeMaliciousArticle();
+      return supertest(app)
+        .post(`/articles`)
+        .send(maliciousArticle)
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.title).to.eql(expectedArticle.title);
+          expect(res.body.content).to.eql(expectedArticle.content);
+        });
     });
   });
 
