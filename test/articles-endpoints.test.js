@@ -1,8 +1,8 @@
 const knex = require('knex');
-const app = require('../src/app');
+const app = require('../src/lib/app');
 const { makeArticlesArray } = require('./articles.fixtures');
 
-describe.only(`Articles Endpoints`, () => {
+describe(`Articles Endpoints`, () => {
   let db;
   const tableName = 'blogful_articles';
 
@@ -95,6 +95,102 @@ describe.only(`Articles Endpoints`, () => {
               ...res.body,
               date_published: new Date(res.body.date_published),
             }).to.eql(expectedArticle);
+          });
+      });
+    });
+  });
+
+  /*****************************************************************
+    POST /articles
+  ******************************************************************/
+  describe(`POST /articles`, () => {
+    it(`creates an article, responding with 201 and the new article`, function() {
+      this.retries(3); // this references the it-block
+      const newArticle = {
+        title: 'Test new article',
+        style: 'Listicle',
+        content: 'Test new article content...',
+      };
+
+      return supertest(app)
+        .post('/articles')
+        .send(newArticle)
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.title).to.eql(newArticle.title);
+          expect(res.body.style).to.eql(newArticle.style);
+          expect(res.body.content).to.eql(newArticle.content);
+          expect(res.body).to.have.property('id');
+          expect(res.headers.location).to.eql(`/articles/${res.body.id}`);
+          const expected = new Date().toLocaleString('en', { timeZone: 'UTC' });
+          const actual = new Date(res.body.date_published).toLocaleString();
+          expect(actual).to.eql(expected);
+        })
+        .then((res) => {
+          return supertest(app)
+            .get(`/articles/${res.body.id}`)
+            .expect(res.body);
+        });
+    });
+
+    const requiredFields = ['title', 'style', 'content'];
+    requiredFields.forEach((field) => {
+      const newArticle = {
+        title: 'Test new article',
+        style: 'Listicle',
+        content: 'Test new article content...',
+      };
+      it(`responds with 400 and an error message when the '${field}' is missing`, () => {
+        delete newArticle[field];
+        return supertest(app)
+          .post('/articles')
+          .send(newArticle)
+          .expect(400, {
+            error: { message: `Missing '${field}' in request body` },
+          });
+      });
+    });
+  });
+
+  /*****************************************************************
+    DELETE /articles/:article_id
+  ******************************************************************/
+  describe(`DELETE /articles/:article_id`, () => {
+    context(`Given no articles`, () => {
+      it(`responds with 404`, () => {
+        const articleId = 123456;
+        return supertest(app)
+          .delete(`/articles/${articleId}`)
+          .expect(404, { error: { message: `Article doesn't exist` } });
+      });
+    });
+
+    context('Given there are articles in the database', () => {
+      const testArticles = makeArticlesArray();
+
+      beforeEach(`insert articles into ${tableName}`, () => {
+        return db.insert(testArticles).into(`${tableName}`);
+      });
+
+      it('responds with 204 and removes the article', () => {
+        const idToRemove = 2;
+        const expectedArticles = testArticles.filter(
+          (article) => article.id !== idToRemove
+        );
+        return supertest(app)
+          .delete(`/articles/${idToRemove}`)
+          .expect(204)
+          .then((res) => {
+            return supertest(app)
+              .get(`/articles`)
+              .expect((res) => {
+                expect(
+                  res.body.map((article) => ({
+                    ...article,
+                    date_published: new Date(article.date_published),
+                  }))
+                ).to.eql(expectedArticles);
+              });
           });
       });
     });

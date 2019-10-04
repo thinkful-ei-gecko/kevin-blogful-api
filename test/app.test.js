@@ -1,4 +1,4 @@
-const app = require('../src/app');
+const app = require('../src/lib/app');
 
 describe('App', () => {
   it('GET / responds with 200', () => {

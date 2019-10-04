@@ -3,6 +3,14 @@ const ArticlesService = {
     return knex.select('*').from('blogful_articles');
   },
 
+  getArticleById(knex, id) {
+    return knex
+      .select('*')
+      .from('blogful_articles')
+      .where('id', id)
+      .first();
+  },
+
   insertArticle(knex, newArticle) {
     return knex
       .insert(newArticle)
@@ -13,24 +21,16 @@ const ArticlesService = {
       });
   },
 
-  getArticleById(knex, id) {
-    return knex
-      .from('blogful_articles')
-      .select('*')
-      .where('id', id)
-      .first();
+  updateArticleById(knex, id, newArticleFields) {
+    return knex('blogful_articles')
+      .where({ id })
+      .update(newArticleFields);
   },
 
   deleteArticleById(knex, id) {
     return knex('blogful_articles')
       .where({ id })
       .delete();
-  },
-
-  updateArticleById(knex, id, newArticleFields) {
-    return knex('blogful_articles')
-      .where({ id })
-      .update(newArticleFields);
   },
 };
 
