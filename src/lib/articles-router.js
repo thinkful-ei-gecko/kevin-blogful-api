@@ -66,11 +66,25 @@ articlesRouter
       next(); // don't forget to call next so the next middleware happens!
     });
   })
-  .get((req, res, next) => {
+  .get((req, res) => {
     return res.json(sanitizedArticle(res.article));
   })
   .delete((req, res, next) => {
     ArticlesService.deleteArticleById(req.app.get('db'), req.params.article_id)
+      .then(() => {
+        return res.status(204).end();
+      })
+      .catch(next);
+  })
+  .patch(jsonParser, (req, res, next) => {
+    const { title, content, style } = req.body;
+    const articleToUpdate = { title, content, style };
+
+    ArticlesService.updateArticleById(
+      req.app.get('db'),
+      req.params.article_id,
+      articleToUpdate
+    )
       .then(() => {
         return res.status(204).end();
       })

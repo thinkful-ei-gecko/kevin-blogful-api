@@ -56,7 +56,7 @@ describe('Articles Endpoints', () => {
           .get('/api/articles')
           .expect(200)
           .expect((res) => {
-            expect(
+            chai.expect(
               res.body.map((article) => ({
                 ...article,
                 date_published: new Date(article.date_published),
@@ -78,8 +78,8 @@ describe('Articles Endpoints', () => {
           .get('/api/articles')
           .expect(200)
           .expect((res) => {
-            expect(res.body[0].title).to.eql(expectedArticle.title);
-            expect(res.body[0].content).to.eql(expectedArticle.content);
+            chai.expect(res.body[0].title).to.eql(expectedArticle.title);
+            chai.expect(res.body[0].content).to.eql(expectedArticle.content);
           });
       });
     });
@@ -112,7 +112,7 @@ describe('Articles Endpoints', () => {
           .get(`/api/articles/${articleId}`)
           .expect(200)
           .expect((res) => {
-            expect({
+            chai.expect({
               ...res.body,
               date_published: new Date(res.body.date_published),
             }).to.eql(expectedArticle);
@@ -132,8 +132,8 @@ describe('Articles Endpoints', () => {
           .get(`/api/articles/${maliciousArticle.id}`)
           .expect(200)
           .expect((res) => {
-            expect(res.body.title).to.eql(expectedArticle.title);
-            expect(res.body.content).to.eql(expectedArticle.content);
+            chai.expect(res.body.title).to.eql(expectedArticle.title);
+            chai.expect(res.body.content).to.eql(expectedArticle.content);
           });
       });
     });
@@ -156,14 +156,14 @@ describe('Articles Endpoints', () => {
         .send(newArticle)
         .expect(201)
         .expect((res) => {
-          expect(res.body.title).to.eql(newArticle.title);
-          expect(res.body.style).to.eql(newArticle.style);
-          expect(res.body.content).to.eql(newArticle.content);
-          expect(res.body).to.have.property('id');
-          expect(res.headers.location).to.eql(`/api/articles/${res.body.id}`);
+          chai.expect(res.body.title).to.eql(newArticle.title);
+          chai.expect(res.body.style).to.eql(newArticle.style);
+          chai.expect(res.body.content).to.eql(newArticle.content);
+          chai.expect(res.body).to.have.property('id');
+          chai.expect(res.headers.location).to.eql(`/api/articles/${res.body.id}`);
           const expected = new Date().toLocaleString('en', { timeZone: 'UTC' });
           const actual = new Date(res.body.date_published).toLocaleString();
-          expect(actual).to.eql(expected);
+          chai.expect(actual).to.eql(expected);
         })
         .then((res) => {
           return supertest(app)
@@ -197,8 +197,8 @@ describe('Articles Endpoints', () => {
         .send(maliciousArticle)
         .expect(201)
         .expect((res) => {
-          expect(res.body.title).to.eql(expectedArticle.title);
-          expect(res.body.content).to.eql(expectedArticle.content);
+          chai.expect(res.body.title).to.eql(expectedArticle.title);
+          chai.expect(res.body.content).to.eql(expectedArticle.content);
         });
     });
   });
@@ -231,16 +231,65 @@ describe('Articles Endpoints', () => {
         return supertest(app)
           .delete(`/api/articles/${idToRemove}`)
           .expect(204)
-          .then((res) => {
+          .then(() => {
             return supertest(app)
               .get('/api/articles')
               .expect((res) => {
-                expect(
+                chai.expect(
                   res.body.map((article) => ({
                     ...article,
                     date_published: new Date(article.date_published),
                   }))
                 ).to.eql(expectedArticles);
+              });
+          });
+      });
+    });
+  });
+
+  /*****************************************************************
+    PATCH /api/articles/:article_id
+  ******************************************************************/
+  describe('PATCH /api/articles/:article_id', () => {
+    context('Given no articles', () => {
+      it('responds with 404', () => {
+        const articleId = 123456;
+        return supertest(app)
+          .patch(`/api/articles/${articleId}`)
+          .expect(404, { error: { message: 'Article does not exist' } });
+      });
+    });
+
+    context('Given there are articles in the database', () => {
+      const testArticles = makeArticlesArray();
+
+      beforeEach(`insert articles into ${tableName}`, () => {
+        return db.insert(testArticles).into(`${tableName}`);
+      });
+
+      it('responds with 204 and updates the article', () => {
+        const idToUpdate = 2;
+        const updateArticle = {
+          title: 'updated article title',
+          style: 'Interview',
+          content: 'updated article content',
+        };
+        const expectedArticle = {
+          ...testArticles[idToUpdate - 1],
+          ...updateArticle,
+        };
+        return supertest(app)
+          .patch(`/api/articles/${idToUpdate}`)
+          .send(updateArticle)
+          .expect(204)
+          .then(() => {
+            return supertest(app)
+              .get(`/api/articles/${idToUpdate}`)
+              .expect((res) => {
+                chai.expect({
+                  ...res.body,
+                  date_published: new Date(res.body.date_published),
+                }).to.eql(expectedArticle);
               });
           });
       });
