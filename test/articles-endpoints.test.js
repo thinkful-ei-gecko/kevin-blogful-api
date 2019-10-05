@@ -5,14 +5,14 @@ const {
   makeMaliciousArticle,
 } = require('./articles.fixtures');
 
-describe(`Articles Endpoints`, () => {
+describe('Articles Endpoints', () => {
   let db;
   const tableName = 'blogful_articles';
 
   /*****************************************************************
     SETUP
   ******************************************************************/
-  before(`make knex instance`, () => {
+  before('make knex instance', () => {
     db = knex({
       client: 'pg',
       connection: process.env.TEST_DB_URL,
@@ -28,18 +28,18 @@ describe(`Articles Endpoints`, () => {
     return db(`${tableName}`).truncate();
   });
 
-  after(`disconnect from db`, () => {
+  after('disconnect from db', () => {
     return db.destroy();
   });
 
   /*****************************************************************
-    GET /articles
+    GET /api/articles
   ******************************************************************/
-  describe(`GET /articles`, () => {
-    context(`Given no articles`, () => {
-      it(`responds with 200 and an empty list`, () => {
+  describe('GET /api/articles', () => {
+    context('Given no articles', () => {
+      it('responds with 200 and an empty list', () => {
         return supertest(app)
-          .get('/articles')
+          .get('/api/articles')
           .expect(200, []);
       });
     });
@@ -53,7 +53,7 @@ describe(`Articles Endpoints`, () => {
 
       it(`responds with 200 and all articles of ${tableName}`, () => {
         return supertest(app)
-          .get('/articles')
+          .get('/api/articles')
           .expect(200)
           .expect((res) => {
             expect(
@@ -66,7 +66,7 @@ describe(`Articles Endpoints`, () => {
       });
     });
 
-    context(`Given an XSS attack article`, () => {
+    context('Given an XSS attack article', () => {
       const { maliciousArticle, expectedArticle } = makeMaliciousArticle();
 
       beforeEach('insert malicious article', () => {
@@ -75,7 +75,7 @@ describe(`Articles Endpoints`, () => {
 
       it('removes XSS attack content', () => {
         return supertest(app)
-          .get(`/articles`)
+          .get('/api/articles')
           .expect(200)
           .expect((res) => {
             expect(res.body[0].title).to.eql(expectedArticle.title);
@@ -86,15 +86,15 @@ describe(`Articles Endpoints`, () => {
   });
 
   /*****************************************************************
-    GET /articles/:article_id
+    GET /api/articles/:article_id
   ******************************************************************/
-  describe(`GET /articles/:article_id`, () => {
-    context(`Given no articles`, () => {
-      it(`responds with 404`, () => {
+  describe('GET /api/articles/:article_id', () => {
+    context('Given no articles', () => {
+      it('responds with 404', () => {
         const articleId = 123456;
         return supertest(app)
-          .get(`/articles/${articleId}`)
-          .expect(404, { error: { message: `Article doesn't exist` } });
+          .get(`/api/articles/${articleId}`)
+          .expect(404, { error: { message: 'Article does not exist' } });
       });
     });
 
@@ -105,11 +105,11 @@ describe(`Articles Endpoints`, () => {
         return db.insert(testArticles).into(`${tableName}`);
       });
 
-      it(`responds with 200 and the specified article`, () => {
+      it('responds with 200 and the specified article', () => {
         const articleId = 2;
         const expectedArticle = testArticles[articleId - 1];
         return supertest(app)
-          .get(`/articles/${articleId}`)
+          .get(`/api/articles/${articleId}`)
           .expect(200)
           .expect((res) => {
             expect({
@@ -120,7 +120,7 @@ describe(`Articles Endpoints`, () => {
       });
     });
 
-    context(`Given an XSS attack article`, () => {
+    context('Given an XSS attack article', () => {
       const { maliciousArticle, expectedArticle } = makeMaliciousArticle();
 
       beforeEach('insert malicious article', () => {
@@ -129,7 +129,7 @@ describe(`Articles Endpoints`, () => {
 
       it('removes XSS attack content', () => {
         return supertest(app)
-          .get(`/articles/${maliciousArticle.id}`)
+          .get(`/api/articles/${maliciousArticle.id}`)
           .expect(200)
           .expect((res) => {
             expect(res.body.title).to.eql(expectedArticle.title);
@@ -140,10 +140,10 @@ describe(`Articles Endpoints`, () => {
   });
 
   /*****************************************************************
-    POST /articles
+    POST /api/articles
   ******************************************************************/
-  describe(`POST /articles`, () => {
-    it(`creates an article, responding with 201 and the new article`, function() {
+  describe('POST /api/articles', () => {
+    it('creates an article, responding with 201 and the new article', function() {
       this.retries(3); // this references the it-block
       const newArticle = {
         title: 'Test new article',
@@ -152,7 +152,7 @@ describe(`Articles Endpoints`, () => {
       };
 
       return supertest(app)
-        .post('/articles')
+        .post('/api/articles')
         .send(newArticle)
         .expect(201)
         .expect((res) => {
@@ -167,7 +167,7 @@ describe(`Articles Endpoints`, () => {
         })
         .then((res) => {
           return supertest(app)
-            .get(`/articles/${res.body.id}`)
+            .get(`/api/articles/${res.body.id}`)
             .expect(res.body);
         });
     });
@@ -182,7 +182,7 @@ describe(`Articles Endpoints`, () => {
       it(`responds with 400 and an error message when the '${field}' is missing`, () => {
         delete newArticle[field];
         return supertest(app)
-          .post('/articles')
+          .post('/api/articles')
           .send(newArticle)
           .expect(400, {
             error: { message: `Missing '${field}' in request body` },
@@ -193,7 +193,7 @@ describe(`Articles Endpoints`, () => {
     it('removes XSS attack content from response', () => {
       const { maliciousArticle, expectedArticle } = makeMaliciousArticle();
       return supertest(app)
-        .post(`/articles`)
+        .post('/api/articles')
         .send(maliciousArticle)
         .expect(201)
         .expect((res) => {
@@ -204,15 +204,15 @@ describe(`Articles Endpoints`, () => {
   });
 
   /*****************************************************************
-    DELETE /articles/:article_id
+    DELETE /api/articles/:article_id
   ******************************************************************/
-  describe(`DELETE /articles/:article_id`, () => {
-    context(`Given no articles`, () => {
-      it(`responds with 404`, () => {
+  describe('DELETE /api/articles/:article_id', () => {
+    context('Given no articles', () => {
+      it('responds with 404', () => {
         const articleId = 123456;
         return supertest(app)
-          .delete(`/articles/${articleId}`)
-          .expect(404, { error: { message: `Article doesn't exist` } });
+          .delete(`/api/articles/${articleId}`)
+          .expect(404, { error: { message: 'Article does not exist' } });
       });
     });
 
@@ -229,11 +229,11 @@ describe(`Articles Endpoints`, () => {
           (article) => article.id !== idToRemove
         );
         return supertest(app)
-          .delete(`/articles/${idToRemove}`)
+          .delete(`/api/articles/${idToRemove}`)
           .expect(204)
           .then((res) => {
             return supertest(app)
-              .get(`/articles`)
+              .get('/api/articles')
               .expect((res) => {
                 expect(
                   res.body.map((article) => ({

@@ -64,7 +64,7 @@ articlesRouter
       .then((article) => {
         if (!article) {
           return res.status(404).json({
-            error: { message: `Article doesn't exist` },
+            error: { message: 'Article does not exist' },
           });
         }
         res.article = article; // save the article for the next middleware
