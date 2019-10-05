@@ -53,18 +53,17 @@ articlesRouter
 articlesRouter
   .route('/:article_id')
   .all((req, res, next) => {
-    ArticlesService.getArticleById(
-      req.app.get('db'),
-      req.params.article_id
-    ).then((article) => {
-      if (!article) {
-        return res.status(404).json({
-          error: { message: 'Article does not exist' },
-        });
+    ArticlesService.getArticleById(req.app.get('db'), req.params.article_id).then(
+      (article) => {
+        if (!article) {
+          return res.status(404).json({
+            error: { message: 'Article does not exist' },
+          });
+        }
+        res.article = article; // save the article for the next middleware
+        next(); // don't forget to call next so the next middleware happens!
       }
-      res.article = article; // save the article for the next middleware
-      next(); // don't forget to call next so the next middleware happens!
-    });
+    );
   })
   .get((req, res) => {
     return res.json(sanitizedArticle(res.article));
@@ -79,6 +78,15 @@ articlesRouter
   .patch(jsonParser, (req, res, next) => {
     const { title, content, style } = req.body;
     const articleToUpdate = { title, content, style };
+
+    const numberOfValues = Object.values(articleToUpdate).filter((val) => !!val).length;
+    if (numberOfValues === 0) {
+      return res.status(400).json({
+        error: {
+          message: 'Request body must contain either title, style or content',
+        },
+      });
+    }
 
     ArticlesService.updateArticleById(
       req.app.get('db'),

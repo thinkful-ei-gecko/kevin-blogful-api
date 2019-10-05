@@ -1,9 +1,6 @@
 const knex = require('knex');
 const app = require('../src/lib/app');
-const {
-  makeArticlesArray,
-  makeMaliciousArticle,
-} = require('./articles.fixtures');
+const { makeArticlesArray, makeMaliciousArticle } = require('./articles.fixtures');
 
 describe('Articles Endpoints', () => {
   let db;
@@ -56,12 +53,14 @@ describe('Articles Endpoints', () => {
           .get('/api/articles')
           .expect(200)
           .expect((res) => {
-            chai.expect(
-              res.body.map((article) => ({
-                ...article,
-                date_published: new Date(article.date_published),
-              }))
-            ).to.eql(testArticles);
+            chai
+              .expect(
+                res.body.map((article) => ({
+                  ...article,
+                  date_published: new Date(article.date_published),
+                }))
+              )
+              .to.eql(testArticles);
           });
       });
     });
@@ -112,10 +111,12 @@ describe('Articles Endpoints', () => {
           .get(`/api/articles/${articleId}`)
           .expect(200)
           .expect((res) => {
-            chai.expect({
-              ...res.body,
-              date_published: new Date(res.body.date_published),
-            }).to.eql(expectedArticle);
+            chai
+              .expect({
+                ...res.body,
+                date_published: new Date(res.body.date_published),
+              })
+              .to.eql(expectedArticle);
           });
       });
     });
@@ -235,12 +236,14 @@ describe('Articles Endpoints', () => {
             return supertest(app)
               .get('/api/articles')
               .expect((res) => {
-                chai.expect(
-                  res.body.map((article) => ({
-                    ...article,
-                    date_published: new Date(article.date_published),
-                  }))
-                ).to.eql(expectedArticles);
+                chai
+                  .expect(
+                    res.body.map((article) => ({
+                      ...article,
+                      date_published: new Date(article.date_published),
+                    }))
+                  )
+                  .to.eql(expectedArticles);
               });
           });
       });
@@ -267,6 +270,18 @@ describe('Articles Endpoints', () => {
         return db.insert(testArticles).into(`${tableName}`);
       });
 
+      it('responds with 400 when no required fields supplied', () => {
+        const idToUpdate = 2;
+        return supertest(app)
+          .patch(`/api/articles/${idToUpdate}`)
+          .send({ irrelevantField: 'foo' })
+          .expect(400, {
+            error: {
+              message: 'Request body must contain either title, style or content',
+            },
+          });
+      });
+
       it('responds with 204 and updates the article', () => {
         const idToUpdate = 2;
         const updateArticle = {
@@ -286,12 +301,44 @@ describe('Articles Endpoints', () => {
             return supertest(app)
               .get(`/api/articles/${idToUpdate}`)
               .expect((res) => {
-                chai.expect({
-                  ...res.body,
-                  date_published: new Date(res.body.date_published),
-                }).to.eql(expectedArticle);
+                chai
+                  .expect({
+                    ...res.body,
+                    date_published: new Date(res.body.date_published),
+                  })
+                  .to.eql(expectedArticle);
               });
           });
+      });
+
+      it('responds with 204 when updating only a subset of fields', () => {
+        const idToUpdate = 2;
+        const updateArticle = {
+          title: 'updated article title',
+        };
+        const expectedArticle = {
+          ...testArticles[idToUpdate - 1],
+          ...updateArticle,
+        };
+        return supertest(app)
+          .patch(`/api/articles/${idToUpdate}`)
+          .send({
+            ...updateArticle,
+            fieldToIgnore: 'should not be in GET response',
+          })
+          .expect(204)
+          .then(() =>
+            supertest(app)
+              .get(`/api/articles/${idToUpdate}`)
+              .expect((res) => {
+                chai
+                  .expect({
+                    ...res.body,
+                    date_published: new Date(res.body.date_published),
+                  })
+                  .to.eql(expectedArticle);
+              })
+          );
       });
     });
   });
