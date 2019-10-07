@@ -10,6 +10,7 @@ const { NODE_ENV } = require('../config');
 const validateBearerToken = require('../validateBearerToken');
 const errorHandler = require('../errorHandler');
 const articlesRouter = require('./articles-router');
+const usersRouter = require('./users-router');
 
 /*******************************************************************
   INIT
@@ -39,6 +40,7 @@ app.get('/xss', (req, res) => {
 });
 
 app.use('/api/articles', articlesRouter);
+app.use('/api/users', usersRouter);
 
 /*******************************************************************
   ERROR HANDLING
