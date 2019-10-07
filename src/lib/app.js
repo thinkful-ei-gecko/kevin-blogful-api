@@ -11,6 +11,7 @@ const validateBearerToken = require('../validateBearerToken');
 const errorHandler = require('../errorHandler');
 const articlesRouter = require('./articles-router');
 const usersRouter = require('./users-router');
+const commentsRouter = require('./comments-router');
 
 /*******************************************************************
   INIT
@@ -41,6 +42,7 @@ app.get('/xss', (req, res) => {
 
 app.use('/api/articles', articlesRouter);
 app.use('/api/users', usersRouter);
+app.use('/api/comments', commentsRouter);
 
 /*******************************************************************
   ERROR HANDLING
