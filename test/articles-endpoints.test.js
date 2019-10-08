@@ -1,10 +1,11 @@
 const knex = require('knex');
 const app = require('../src/lib/app');
 const { makeArticlesArray, makeMaliciousArticle } = require('./articles.fixtures');
+const { makeUsersArray } = require('./users.fixtures');
 
 describe('Articles Endpoints', () => {
   let db;
-  const tableName = 'blogful_articles';
+  const articlesTable = 'blogful_articles';
 
   /*****************************************************************
     SETUP
@@ -17,12 +18,17 @@ describe('Articles Endpoints', () => {
     app.set('db', db);
   });
 
-  before(`clean ${tableName}`, () => {
-    return db(`${tableName}`).truncate();
+  before(`clean ${articlesTable}`, () => {
+    return db.raw(
+      'TRUNCATE blogful_articles, blogful_users, blogful_comments RESTART IDENTITY CASCADE'
+    );
   });
 
   afterEach(() => {
-    return db(`${tableName}`).truncate();
+    // db(`${articlesTable}`).truncate()
+    return db.raw(
+      'TRUNCATE blogful_articles, blogful_users, blogful_comments RESTART IDENTITY CASCADE'
+    );
   });
 
   after('disconnect from db', () => {
@@ -41,14 +47,20 @@ describe('Articles Endpoints', () => {
       });
     });
 
-    context(`given there are articles in ${tableName}`, () => {
+    context(`given there are articles in ${articlesTable}`, () => {
+      const testUsers = makeUsersArray();
       const testArticles = makeArticlesArray();
 
-      beforeEach(`insert articles into ${tableName}`, () => {
-        return db.insert(testArticles).into(`${tableName}`);
+      beforeEach('insert articles', () => {
+        return db
+          .insert(testUsers)
+          .into('blogful_users')
+          .then(() => {
+            return db.insert(testArticles).into(`${articlesTable}`);
+          });
       });
 
-      it(`responds with 200 and all articles of ${tableName}`, () => {
+      it(`responds with 200 and all articles of ${articlesTable}`, () => {
         return supertest(app)
           .get('/api/articles')
           .expect(200)
@@ -66,10 +78,16 @@ describe('Articles Endpoints', () => {
     });
 
     context('Given an XSS attack article', () => {
+      const testUsers = makeUsersArray();
       const { maliciousArticle, expectedArticle } = makeMaliciousArticle();
 
       beforeEach('insert malicious article', () => {
-        return db.insert([maliciousArticle]).into(`${tableName}`);
+        return db
+          .insert(testUsers)
+          .into('blogful_users')
+          .then(() => {
+            return db.insert([maliciousArticle]).into(`${articlesTable}`);
+          });
       });
 
       it('removes XSS attack content', () => {
@@ -97,11 +115,17 @@ describe('Articles Endpoints', () => {
       });
     });
 
-    context(`given there are articles in ${tableName}`, () => {
+    context(`given there are articles in ${articlesTable}`, () => {
+      const testUsers = makeUsersArray();
       const testArticles = makeArticlesArray();
 
-      beforeEach(`insert articles into ${tableName}`, () => {
-        return db.insert(testArticles).into(`${tableName}`);
+      beforeEach('insert articles', () => {
+        return db
+          .insert(testUsers)
+          .into('blogful_users')
+          .then(() => {
+            return db.insert(testArticles).into(`${articlesTable}`);
+          });
       });
 
       it('responds with 200 and the specified article', () => {
@@ -122,10 +146,16 @@ describe('Articles Endpoints', () => {
     });
 
     context('Given an XSS attack article', () => {
+      const testUsers = makeUsersArray();
       const { maliciousArticle, expectedArticle } = makeMaliciousArticle();
 
       beforeEach('insert malicious article', () => {
-        return db.insert([maliciousArticle]).into(`${tableName}`);
+        return db
+          .insert(testUsers)
+          .into('blogful_users')
+          .then(() => {
+            return db.insert([maliciousArticle]).into(`${articlesTable}`);
+          });
       });
 
       it('removes XSS attack content', () => {
@@ -144,6 +174,11 @@ describe('Articles Endpoints', () => {
     POST /api/articles
   ******************************************************************/
   describe('POST /api/articles', () => {
+    const testUsers = makeUsersArray();
+    beforeEach('insert users', () => {
+      return db.insert(testUsers).into('blogful_users');
+    });
+
     it('creates an article, responding with 201 and the new article', function() {
       this.retries(3); // this references the it-block
       const newArticle = {
@@ -218,10 +253,16 @@ describe('Articles Endpoints', () => {
     });
 
     context('Given there are articles in the database', () => {
+      const testUsers = makeUsersArray();
       const testArticles = makeArticlesArray();
 
-      beforeEach(`insert articles into ${tableName}`, () => {
-        return db.insert(testArticles).into(`${tableName}`);
+      beforeEach('insert articles', () => {
+        return db
+          .insert(testUsers)
+          .into('blogful_users')
+          .then(() => {
+            return db.insert(testArticles).into(`${articlesTable}`);
+          });
       });
 
       it('responds with 204 and removes the article', () => {
@@ -264,10 +305,16 @@ describe('Articles Endpoints', () => {
     });
 
     context('Given there are articles in the database', () => {
+      const testUsers = makeUsersArray();
       const testArticles = makeArticlesArray();
 
-      beforeEach(`insert articles into ${tableName}`, () => {
-        return db.insert(testArticles).into(`${tableName}`);
+      beforeEach('insert articles', () => {
+        return db
+          .insert(testUsers)
+          .into('blogful_users')
+          .then(() => {
+            return db.insert(testArticles).into(`${articlesTable}`);
+          });
       });
 
       it('responds with 400 when no required fields supplied', () => {
